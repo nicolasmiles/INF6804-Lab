@@ -1,0 +1,11 @@
+.idea/
+
+TP2/__pycache__/
+TP3/__pycache__/
+
+*.png
+*.zip
+
+*.caffemodel
+
+*.prototxt

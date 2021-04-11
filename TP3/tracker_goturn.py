@@ -1,34 +1,4 @@
-import cv2
-import sys
-import os
-import matplotlib.pyplot as plt
-
-DATASET_FOLDER = "./dataset/"
-DIR_DATA_MOODLE = DATASET_FOLDER + "TP3_data/"
-DIR_FRAMES = DIR_DATA_MOODLE + "frames/"
-INIT_FILE = DIR_DATA_MOODLE + "init.txt"
-
-
-def x1x2y1y2_to_xywh(coord):
-    # coord = (x1, x2, y1, y2)
-    return (coord[0], coord[2], abs(coord[1] - coord[0]), abs(coord[3] - coord[2]))
-
-
-def xywh_to_x1x2y1y2(coord):
-    # coord = (x, y, w, h)
-    return (coord[0], coord[0] + coord[2], coord[1], coord[1] + coord[3])
-
-
-def read_file(file_path):
-    file = open(file_path, "r")
-    lines = file.read().splitlines()
-    for k in range(len(lines)):
-        lines[k] = list(lines[k].split(" ", 5))
-        for l in range(len(lines[k])):
-            lines[k][l] = int(lines[k][l])
-    return (lines)
-
-
+from utils import *
 init_coord = read_file(INIT_FILE)
 tasse1, tasse2 = init_coord[0][2:6], init_coord[1][2:6]
 print(f"tasse1 = {tasse1} (x1x2y1y2) = {x1x2y1y2_to_xywh(tasse1)} (xywh) -> {xywh_to_x1x2y1y2(x1x2y1y2_to_xywh(tasse1))}(x1x2y1y2) (check inverse)")

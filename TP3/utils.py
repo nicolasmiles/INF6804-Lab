@@ -21,13 +21,37 @@ def xywh_to_x1x2y1y2(coord):
 
 
 def read_file(file_path):
-    file = open(file_path, "r")
-    lines = file.read().splitlines()
-    for k in range(len(lines)):
-        lines[k] = list(lines[k].split(" ", 5))
-        for line in range(len(lines[k])):
-            lines[k][line] = int(lines[k][line])
+    with open(file_path, "r") as file:
+        lines = file.read().splitlines()
+        for k in range(len(lines)):
+            lines[k] = list(lines[k].split(" ", 5))
+            for line in range(len(lines[k])):
+                lines[k][line] = int(lines[k][line])
+
     return lines
+
+
+def inter(a, b):
+    x = max(a[0], b[0])
+    y = max(a[1], b[1])
+    w = min(a[0] + a[2], b[0] + b[2]) - x
+    h = min(a[1] + a[3], b[1] + b[3]) - y
+    if w <= 0 or h <= 0:
+        return 0, 0, 0, 0
+    return x, y, w, h
+
+
+def same_windows(x1, y1, l1, h1, x2, y2, l2, h2):
+    x, y, l, h = inter((x1, y1, l1, h1), (x2, y2, l2, h2))
+    interS = l * h
+    surface1 = l1 * h1
+    surface2 = l2 * h2
+    unionS = surface1 + surface2 - interS
+    return interS / unionS
+
+
+def iou(box_gt, box_sub):
+    return same_windows(box_gt[0], box_gt[1], box_gt[2], box_gt[3], box_sub[0], box_sub[1], box_sub[2], box_sub[3])
 
 
 def compareParticles(hist1, hist2):

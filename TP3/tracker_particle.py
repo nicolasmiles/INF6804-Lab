@@ -46,7 +46,7 @@ def tracker_particle(images_list, bbox, printing=True, scale=0.25, box_size_evol
                 ax.add_patch(rect)
             plt.title(title)
             plt.show()
-        if k % 100:
+        if k % 100 == 0:
             print(f"Step : {k}")
     end_time = time.time()
     print(end_time - start_time)

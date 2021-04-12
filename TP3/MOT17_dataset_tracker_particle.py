@@ -40,6 +40,6 @@ for epoch in range(10):
     score = track_MOT(scale=scale, box_size_evolution=box_size_evolution, particle_movement=particle_movement, nb_particles=nb_particles)
     print(f"Score = {score}")
     with open("score.txt", "a") as file:
-        file.write(f"scale = {scale}; box_size_evolution = {box_size_evolution};particle_movement = {particle_movement}; nb_particles = {nb_particles};Score = {score}\n")
+        file.write(f"{scale};{box_size_evolution};{particle_movement};{nb_particles};{score}\n")
 
 

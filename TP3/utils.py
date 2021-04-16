@@ -104,7 +104,11 @@ def generateParticles(particles, nb_particles, mvt=20, size_box=5, weight=None):
 def compute_descriptor(image, bbox):
     orb = cv2.ORB_create()
     image_gray = image[bbox[1]:bbox[1] + bbox[3], bbox[0]:bbox[0] + bbox[2]]
-    _, descriptor = orb.detectAndCompute(image_gray, None)
+    w, l = image_gray.shape
+    if l > 1 and w > 1:
+        _, descriptor = orb.detectAndCompute(image_gray, None)
+    else:
+        descriptor = None
     return descriptor
 
 

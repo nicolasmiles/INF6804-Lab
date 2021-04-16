@@ -12,9 +12,9 @@ person1_bbox = gt[0]
 frame_list = glob.glob(DIR_FRAMES + "*.jpg")[:900]
 
 
-def track_MOT(scale=0.25, box_size_evolution=1, particle_movement=20, nb_particles=200):
+def track_MOT(scale=0.25, box_size_evolution=1, particle_movement=20, nb_particles=200, histogram=True):
     bbox_list = tracker_particle(frame_list, [person1_bbox], printing=False,
-                                 scale=scale, box_size_evolution=box_size_evolution, particle_movement=particle_movement, nb_particles=nb_particles)
+                                 scale=scale, box_size_evolution=box_size_evolution, particle_movement=particle_movement, nb_particles=nb_particles, histogram=histogram)
 
     accuracy = 0
     for i, bbox in enumerate(bbox_list):
@@ -37,7 +37,7 @@ for epoch in range(1000):
     nb_particles = np.random.choice(param_grid["nb_particles"])
     print(f"Parameters : scale = {scale}, box_size_evolution = {box_size_evolution}, "
           f"particle_movement = {particle_movement}, nb_particles = {nb_particles}")
-    score = track_MOT(scale=scale, box_size_evolution=box_size_evolution, particle_movement=particle_movement, nb_particles=nb_particles)
+    score = track_MOT(scale=scale, box_size_evolution=box_size_evolution, particle_movement=particle_movement, nb_particles=nb_particles, histogram=histogram)
     print(f"Score = {score}")
     score_file = "score_orb.txt"
     if histogram:

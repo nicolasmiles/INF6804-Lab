@@ -28,8 +28,8 @@ def track_MOT(scale=0.25, box_size_evolution=1, particle_movement=20, nb_particl
 
 param_grid = {'scale': np.arange(0.1, 0.5, step=0.05), 'box_size_evolution': range(1, 16, 2),
               'particle_movement': range(1, 53, 3), 'nb_particles': np.append(range(1, 100, 10), range(100, 500, 50))}
-
-for epoch in range(10):
+histogram = False
+for epoch in range(1000):
     print(f"Epoch {epoch}")
     scale = 0.25  # np.random.choice(param_grid["scale"])
     box_size_evolution = np.random.choice(param_grid["box_size_evolution"])
@@ -39,7 +39,10 @@ for epoch in range(10):
           f"particle_movement = {particle_movement}, nb_particles = {nb_particles}")
     score = track_MOT(scale=scale, box_size_evolution=box_size_evolution, particle_movement=particle_movement, nb_particles=nb_particles)
     print(f"Score = {score}")
-    with open("score.txt", "a") as file:
+    score_file = "score_orb.txt"
+    if histogram:
+        score_file = "score_hist.txt"
+    with open(score_file, "a") as file:
         file.write(f"{scale};{box_size_evolution};{particle_movement};{nb_particles};{score}\n")
 
 

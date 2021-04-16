@@ -101,26 +101,44 @@ def generateParticles(particles, nb_particles, mvt=20, size_box=5, weight=None):
     return new_particles
 
 
-def pass_one_frame(img, roi_hist, particles, nb_part=50, movement=100, size_box=50, plot_fig=0, color='r', plot_title="Suivi de la ROI", idx=0):
+def compute_descriptor(image, bbox):
+    orb = cv2.ORB_create()
+    image_gray = image[bbox[1]:bbox[1] + bbox[3], bbox[0]:bbox[0] + bbox[2]]
+    _, descriptor = orb.detectAndCompute(image_gray, None)
+    return descriptor
+
+
+def comparison_ORB(query, train):
+    bf = cv2.BFMatcher(cv2.NORM_HAMMING, crossCheck=True)
+
+    matches = bf.match(query, train)
+    matches = sorted(matches, key=lambda x: x.distance)
+
+    score = 0
+    n = 0
+    weight = 2
+    for mat in matches:
+        score += 1 / (mat.distance + n * weight)
+        n += 1
+    # print(score)
+    return score
+
+
+def pass_one_frame(img, roi_gt, particles, nb_part=50, movement=100, size_box=50, histogram=True):
     # Calcule le suivi de l'objet identifié par init_coord entre les images img1 et img2
     # Mettre plot_fig=1 pour tout afficher / plot_fig=2 pour uniquement l'affichage sur img2
     # init_coord doit être x1x2y1y2
     # Renvoie les coordonnées x1x2y1y2 du ROI d'après
 
     particles = generateParticles(particles, nb_part, mvt=movement, size_box=size_box)
-
-    # if plot_fig == 2:
-    #     fig, ax = plt.subplots(1, figsize=(10, 10))
-    #     ax.imshow(img1, cmap=plt.get_cmap('gray'))
-    #     for p in particles:
-    #         rect = patches.Rectangle((p[0], p[1]), p[2], p[3], linewidth=2, edgecolor=color, facecolor='none')
-    #         ax.add_patch(rect)
-    #     plt.show()
-
     weight = []
     for p in particles:
-        candidate = computeHist(img, p)
-        dist = compareParticles(roi_hist, candidate)
+        if histogram:
+            candidate = computeHist(img, p)
+            dist = compareParticles(roi_gt, candidate)
+        else:
+            candidate = compute_descriptor(img, p)
+            dist = comparison_ORB(roi_gt, candidate)
         weight.append(dist)
     p = particles[weight.index(max(weight))]
 

@@ -11,3 +11,5 @@ TP3/__pycache__/
 *.prototxt
 
 TP3/re3-pytorch
+
+*.txt

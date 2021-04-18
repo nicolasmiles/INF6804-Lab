@@ -31,7 +31,9 @@ def tracker_particle(images_list, bbox, printing=True, scale=0.25, box_size_evol
         else:
             roi_black = compute_descriptor(imageA, bbox2)
     start_time = time.time()
-    bbox1_res = []
+    bbox1_res = [bbox[0]]
+    if len(bbox) > 1:
+        bbox2_res = [bbox[1]]
     for k in range(1, len(images_list)):
         if histogram:
             image = cv2.imread(images_list[k], cv2.IMREAD_COLOR)
@@ -46,6 +48,8 @@ def tracker_particle(images_list, bbox, printing=True, scale=0.25, box_size_evol
         bbox1_res.append(bbox1_rescaled)
         if len(bbox) > 1:
             bbox2, particles_list_black = pass_one_frame(img=image, roi_gt=roi_black, particles=particles_list_black, size_box=box_size_evolution, movement=particle_movement, nb_part=nb_particles, histogram=histogram)
+            bbox2_rescaled = tuple([int(int(item) / scale) for item in bbox2])
+            bbox2_res.append(bbox2_rescaled)
         if printing and k % 10 == 0:
             fig, ax = plt.subplots(1)
             ax.imshow(image)
@@ -60,4 +64,6 @@ def tracker_particle(images_list, bbox, printing=True, scale=0.25, box_size_evol
             print(f"Step : {k}")
     end_time = time.time()
     print(end_time - start_time)
+    if len(bbox) > 1:
+        return bbox1_res, bbox2_res
     return bbox1_res

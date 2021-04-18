@@ -27,7 +27,7 @@ def track_MOT(scale=0.25, box_size_evolution=1, particle_movement=20, nb_particl
 
 
 param_grid = {'scale': np.arange(0.1, 0.5, step=0.05), 'box_size_evolution': range(1, 16, 2),
-              'particle_movement': range(1, 53, 3), 'nb_particles': np.append(range(1, 100, 10), range(100, 500, 50))}
+              'particle_movement': range(1, 53, 3), 'nb_particles': np.append(range(10, 100, 10), range(100, 500, 50))}
 histogram = False
 for epoch in range(1000):
     print(f"Epoch {epoch}")

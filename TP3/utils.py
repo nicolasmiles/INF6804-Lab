@@ -63,9 +63,8 @@ def compareColorParticles(hist1, hist2):
 
 
 def compareGradientParticles(hist1, hist2):
-    res = np.sum(hist1 == hist2)
-    # res = np.sum(np.isclose(hist1, hist2))
-    return res / (hist1.shape[0] * hist1.shape[1])
+    res = np.sum(abs(hist1-hist2))
+    return res / (hist2.shape[0] * hist2.shape[1])
 
 
 def computeColorHist(image, bbox):
@@ -86,14 +85,13 @@ def computeColorHist(image, bbox):
 
 
 def computeGradientHist(image, bbox):
-    roi = image[max(bbox[1], 0): min(bbox[1] + bbox[3], np.shape(image)[0]),
-          max(bbox[0], 0): min(bbox[0] + bbox[2], np.shape(image)[1])]
-    #if 0 in [max(bbox[1], 0), min(bbox[1] + bbox[3], np.shape(image)[0]),
-    #      max(bbox[0], 0), min(bbox[0] + bbox[2], np.shape(image)[1])]:
-    #    print([bbox[1], max(bbox[1], 0), bbox[1] + bbox[3], min(bbox[1] + bbox[3], np.shape(image)[0]),
-    #      bbox[0], max(bbox[0], 0), bbox[0] + bbox[2], min(bbox[0] + bbox[2], np.shape(image)[1])])
-    _, hog_image = hog(roi, orientations=8, pixels_per_cell=(16, 16),
-                       cells_per_block=(1, 1), visualize=True, multichannel=True)
+    roi = image[bbox[1]:bbox[1] + bbox[3], bbox[0]:bbox[0] + bbox[2]]
+    w, l = roi.shape
+    if l > 1 and w > 1:
+        _, hog_image = hog(roi, orientations=8, pixels_per_cell=(16, 16),
+                       cells_per_block=(1, 1), visualize=True, multichannel=False)
+    else :
+        hog_image = None
     return hog_image
 
 
@@ -151,8 +149,8 @@ def comparison_ORB(query, train):
     return score
 
 
-def pass_one_frame(img, roi_gt, particles, nb_part=50, movement=100, size_box=50, color_histogram=True,
-                   gradient_histogram=True):
+def pass_one_frame(imgGray, imgColor, roi_gt, particles, nb_part=50, movement=100, size_box=50, color_histogram=True,
+                   gradient_histogram=True, orb_descriptor=False):
     # Calcule le suivi de l'objet identifié par init_coord entre les images img1 et img2
     # Mettre plot_fig=1 pour tout afficher / plot_fig=2 pour uniquement l'affichage sur img2
     # init_coord doit être x1x2y1y2
@@ -164,19 +162,19 @@ def pass_one_frame(img, roi_gt, particles, nb_part=50, movement=100, size_box=50
         if color_histogram and gradient_histogram:
             roi_gt_color = roi_gt[0]
             roi_gt_gradient = roi_gt[1]
-            candidate_color = computeColorHist(img, p)
-            candidate_gradient = computeGradientHist(img, p)
+            candidate_color = computeColorHist(imgColor, p)
+            candidate_gradient = computeGradientHist(imgGray, p)
             dist_color = compareColorParticles(roi_gt_color, candidate_color)
             dist_gradient = compareGradientParticles(roi_gt_gradient, candidate_gradient)
             dist = (dist_color + dist_gradient) / 2
         elif color_histogram:
-            candidate = computeColorHist(img, p)
+            candidate = computeColorHist(imgColor, p)
             dist = compareColorParticles(roi_gt, candidate)
         elif gradient_histogram:
-            candidate = computeGradientHist(img, p)
+            candidate = computeGradientHist(imgGray, p)
             dist = compareGradientParticles(roi_gt, candidate)
-        else:
-            candidate = compute_descriptor(img, p)
+        elif orb_descriptor:
+            candidate = compute_descriptor(imgGray, p)
             dist = comparison_ORB(roi_gt, candidate)
         weight.append(dist)
     p = particles[weight.index(max(weight))]

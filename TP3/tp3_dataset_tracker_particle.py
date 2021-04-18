@@ -13,4 +13,4 @@ mug1_bbox = x1x2y1y2_to_xywh(mug2)
 mug2_bbox = x1x2y1y2_to_xywh(mug1)
 frame_list = [DIR_FRAMES + 'frame' + str(k) + '.jpg' for k in range(1, 1011)]
 
-tracker_particle(frame_list, [mug1_bbox, mug2_bbox], scale=0.25, box_size_evolution=1, particle_movement=1, nb_particles=350, histogram=False)
+tracker_particle(frame_list, [mug1_bbox, mug2_bbox], scale=0.25, box_size_evolution=1, particle_movement=5, nb_particles=200, color_histogram=True, gradient_histogram=True)

@@ -6,6 +6,7 @@ import numpy as np
 import random as ran
 import time
 import glob
+from skimage.feature import hog
 
 DATASET_FOLDER = "./dataset/"
 
@@ -54,14 +55,20 @@ def iou(box_gt, box_sub):
     return same_windows(box_gt[0], box_gt[1], box_gt[2], box_gt[3], box_sub[0], box_sub[1], box_sub[2], box_sub[3])
 
 
-def compareParticles(hist1, hist2):
+def compareColorParticles(hist1, hist2):
     res = 0
     for i in range(len(hist1)):
         res += 1 - cv2.compareHist(hist1[i], hist2[i], cv2.HISTCMP_BHATTACHARYYA)
     return res / len(hist1)
 
 
-def computeHist(image, bbox):
+def compareGradientParticles(hist1, hist2):
+    res = np.sum(hist1 == hist2)
+    # res = np.sum(np.isclose(hist1, hist2))
+    return res / (hist1.shape[0] * hist1.shape[1])
+
+
+def computeColorHist(image, bbox):
     roi = (bbox[0], bbox[1], bbox[0] + bbox[2], bbox[1] + bbox[3])
     mask = np.zeros((image.shape[0], image.shape[1]), np.uint8)
     cv2.rectangle(mask, (roi[0], roi[1]), (roi[2], roi[3]), 255, -1, 8, 0)
@@ -78,13 +85,27 @@ def computeHist(image, bbox):
     return [hist1, hist2, hist3]
 
 
+def computeGradientHist(image, bbox):
+    roi = image[max(bbox[1], 0): min(bbox[1] + bbox[3], np.shape(image)[0]),
+          max(bbox[0], 0): min(bbox[0] + bbox[2], np.shape(image)[1])]
+    #if 0 in [max(bbox[1], 0), min(bbox[1] + bbox[3], np.shape(image)[0]),
+    #      max(bbox[0], 0), min(bbox[0] + bbox[2], np.shape(image)[1])]:
+    #    print([bbox[1], max(bbox[1], 0), bbox[1] + bbox[3], min(bbox[1] + bbox[3], np.shape(image)[0]),
+    #      bbox[0], max(bbox[0], 0), bbox[0] + bbox[2], min(bbox[0] + bbox[2], np.shape(image)[1])])
+    _, hog_image = hog(roi, orientations=8, pixels_per_cell=(16, 16),
+                       cells_per_block=(1, 1), visualize=True, multichannel=True)
+    return hog_image
+
+
 def generateParticles(particles, nb_particles, mvt=20, size_box=5, weight=None):
     if len(particles) == 1:
         # Pour générer les particules initiales. Pas de poids disponible
         # Déplacement aléatoire de ROI initial de [-mvt, mvt]
         new_particles = particles
         for i in range(1, nb_particles):
-            part = [(particles[0][0] + ran.randint(-mvt, mvt), particles[0][1] + ran.randint(-mvt, mvt), particles[0][2] + ran.randint(-size_box, size_box), particles[0][3] + ran.randint(-size_box, size_box))]
+            part = [(particles[0][0] + ran.randint(-mvt, mvt), particles[0][1] + ran.randint(-mvt, mvt),
+                     particles[0][2] + ran.randint(-size_box, size_box),
+                     particles[0][3] + ran.randint(-size_box, size_box))]
             if i == 1:
                 print("Première part = ", part)
             new_particles = new_particles + part
@@ -92,11 +113,13 @@ def generateParticles(particles, nb_particles, mvt=20, size_box=5, weight=None):
         # Échantillonage préférentiel avec la fonction ran.choices()
         temp = ran.choices(particles, weight)[0]
         # Mise à jour de leur état en ajoutant une translation en X et Y.
-        part = [(temp[0] + ran.randint(-mvt, mvt), temp[1] + ran.randint(-mvt, mvt), temp[2] + ran.randint(-size_box, size_box), temp[3] + ran.randint(-size_box, size_box))]
+        part = [(temp[0] + ran.randint(-mvt, mvt), temp[1] + ran.randint(-mvt, mvt),
+                 temp[2] + ran.randint(-size_box, size_box), temp[3] + ran.randint(-size_box, size_box))]
         new_particles = part
         for i in range(1, nb_particles):
             temp = ran.choices(particles, weight)[0]
-            part = [(temp[0] + ran.randint(-mvt, mvt), temp[1] + ran.randint(-mvt, mvt), temp[2] + ran.randint(-size_box, size_box), temp[3] + ran.randint(-size_box, size_box))]
+            part = [(temp[0] + ran.randint(-mvt, mvt), temp[1] + ran.randint(-mvt, mvt),
+                     temp[2] + ran.randint(-size_box, size_box), temp[3] + ran.randint(-size_box, size_box))]
             new_particles = new_particles + part
     return new_particles
 
@@ -128,7 +151,8 @@ def comparison_ORB(query, train):
     return score
 
 
-def pass_one_frame(img, roi_gt, particles, nb_part=50, movement=100, size_box=50, histogram=True):
+def pass_one_frame(img, roi_gt, particles, nb_part=50, movement=100, size_box=50, color_histogram=True,
+                   gradient_histogram=True):
     # Calcule le suivi de l'objet identifié par init_coord entre les images img1 et img2
     # Mettre plot_fig=1 pour tout afficher / plot_fig=2 pour uniquement l'affichage sur img2
     # init_coord doit être x1x2y1y2
@@ -137,14 +161,24 @@ def pass_one_frame(img, roi_gt, particles, nb_part=50, movement=100, size_box=50
     particles = generateParticles(particles, nb_part, mvt=movement, size_box=size_box)
     weight = []
     for p in particles:
-        if histogram:
-            candidate = computeHist(img, p)
-            dist = compareParticles(roi_gt, candidate)
+        if color_histogram and gradient_histogram:
+            roi_gt_color = roi_gt[0]
+            roi_gt_gradient = roi_gt[1]
+            candidate_color = computeColorHist(img, p)
+            candidate_gradient = computeGradientHist(img, p)
+            dist_color = compareColorParticles(roi_gt_color, candidate_color)
+            dist_gradient = compareGradientParticles(roi_gt_gradient, candidate_gradient)
+            dist = (dist_color + dist_gradient) / 2
+        elif color_histogram:
+            candidate = computeColorHist(img, p)
+            dist = compareColorParticles(roi_gt, candidate)
+        elif gradient_histogram:
+            candidate = computeGradientHist(img, p)
+            dist = compareGradientParticles(roi_gt, candidate)
         else:
             candidate = compute_descriptor(img, p)
             dist = comparison_ORB(roi_gt, candidate)
         weight.append(dist)
     p = particles[weight.index(max(weight))]
 
-    # print(f"p={p} et next_coord={next_coord}")
     return p, particles
